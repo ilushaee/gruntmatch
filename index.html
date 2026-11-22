@@ -168,8 +168,7 @@
   .tabs button[aria-selected="true"] { color: var(--accent); border-bottom-color: var(--accent); }
   .tabs button:focus-visible { outline: 2px solid var(--accent); outline-offset: -3px; }
   .panel { display: flex; flex-direction: column; min-height: 0; flex: 1; }
-  .panel[hidden], .fld[hidden], .chk[hidden], .store div[hidden] { display: none; }
-  .trap { position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden; }
+  .panel[hidden], .fld[hidden], .store div[hidden] { display: none; }
 
   #list .own { margin-top: 8px; display: flex; gap: 14px; align-items: center; font-size: 13px; }
   #list .own em { font-style: normal; font-size: 11px; font-weight: 700; padding: 2px 7px; border-radius: 4px; background: #e6f0f8; color: var(--accent); }
@@ -325,8 +324,6 @@
         <label class="chk"><input id="a-same" type="checkbox" checked> На этом номере есть WhatsApp</label>
         <label class="fld" id="a-wa-wrap" hidden>WhatsApp, если номер другой <input id="a-wa" type="tel"></label>
         <label class="fld">Комментарий <textarea id="a-note" placeholder="Погрузка, подъезд, сроки"></textarea></label>
-        <label class="chk" id="a-ok-wrap" hidden><input id="a-ok" type="checkbox"> <span>Согласен, что адрес, имя и телефон увидят все посетители сайта. Данные хранятся в Google Таблице.</span></label>
-        <div class="trap" aria-hidden="true"><label>Сайт <input id="a-trap" type="text" tabindex="-1" autocomplete="off"></label></div>
         <div class="hint err" id="a-err" role="alert"></div>
         <div class="btns">
           <button class="btn main" type="submit" id="a-save">Добавить на карту</button>
@@ -352,12 +349,10 @@
 (function () {
   // Ключ JavaScript API Яндекс Карт: получить в developer.tech.yandex.ru и вставить сюда.
   var YANDEX_API_KEY = '';
-  // Ссылка веб-приложения Google Apps Script (…/exec), код — в apps-script/Code.gs.
-  // Пустая строка: заявки хранятся только в браузере.
-  var API_URL = '';
+  // На localhost заявки пишет server.py: в listings.json и на GitHub. На опубликованном сайте список только читается.
+  var CAN_WRITE = /^(localhost|127\.0\.0\.1)$/.test(location.hostname);
 
   var STORE_KEY = 'gruntmatch.own';
-  var KEYS_KEY = 'gruntmatch.keys';   // ключи для правки своих общих заявок: {id: ключ}
   function $(id) { return document.getElementById(id); }
 
   // Проверка записи из хранилища или файла: лишние поля отбрасываем, битые записи не берём
@@ -380,25 +375,11 @@
     catch (e) { return false; }
   }
 
-  function loadKeys() {
-    try { return JSON.parse(localStorage.getItem(KEYS_KEY)) || {}; } catch (e) { return {}; }
-  }
-  function saveKey(id, key) {
-    var k = loadKeys();
-    if (key) k[id] = key; else delete k[id];
-    try { localStorage.setItem(KEYS_KEY, JSON.stringify(k)); return true; } catch (e) { return false; }
-  }
-  function newKey() {
-    var b = crypto.getRandomValues(new Uint8Array(32));
-    return Array.prototype.map.call(b, function (x) { return ('0' + x.toString(16)).slice(-2); }).join('');
-  }
-
   var LISTINGS = [];
-  var shared = [];         // заявки из общей базы
+  var shared = [];         // заявки из listings.json
   var sharedError = false;
   function rebuild() {
-    var own = loadOwn(), mine = {}, keys = loadKeys();
-    shared.forEach(function (it) { it.own = !!keys[it.id]; });
+    var own = loadOwn(), mine = {};
     own.concat(shared).forEach(function (it) { mine[it.id] = true; });
     // если заявку уже перенесли в data.js, дубль не показываем
     LISTINGS = own.concat(shared, (window.LISTINGS || []).filter(function (it) { return !mine[it.id]; }));
@@ -512,8 +493,9 @@
   function renderList() {
     var visible = filtered.filter(inView);
     count.textContent = 'На карте: ' + visible.length + ' из ' + filtered.length;
+    if (notice) count.appendChild(el('div', '', notice));
     if (sharedError) {
-      count.appendChild(document.createTextNode('. Общие заявки не загрузились. '));
+      count.appendChild(document.createTextNode('. Новые заявки не загрузились. '));
       var again = el('button', 'link', 'Повторить');
       again.type = 'button';
       again.onclick = sync;
@@ -653,11 +635,9 @@
   }
   function countOwn() {
     var n = loadOwn().length;
-    $('a-count').textContent = !API_URL ? 'Моих заявок: ' + n + '. Они хранятся в этом браузере и видны только вам.' :
-      'Изменить или удалить свою заявку можно в этом браузере, в списке объявлений.' +
-      (n ? ' Неопубликованных заявок: ' + n + '.' : '');
-    $('a-files').hidden = !!API_URL && !n;
-    $('a-ok-wrap').hidden = !API_URL;
+    $('a-count').textContent = CAN_WRITE ?
+      'Заявка сразу появится здесь и примерно через минуту на сайте.' + (n ? ' Неопубликованных: ' + n + '.' : '') :
+      'Моих заявок: ' + n + '. Они хранятся в этом браузере и видны только вам.';
     $('a-export').disabled = !n;
     $('a-export').style.opacity = n ? 1 : .5;
   }
@@ -796,7 +776,7 @@
   function resetForm() {
     $('form').reset();
     editId = null;
-    pendingKey = null;
+    pendingId = null;
     clearDraft();
     $('a-wa-wrap').hidden = true;
     $('form-title').textContent = 'Новая заявка';
@@ -806,27 +786,28 @@
     hint('');
   }
 
-  // ---------- Общая база ----------
+  // ---------- Заявки на сайте ----------
   var busy = false;
   var syncSeq = 0;
-  var pendingKey = null;   // ключ новой заявки; при повторе после обрыва связи остаётся тем же, и дубля не будет
+  var pendingId = null;    // id новой заявки; при повторе после сбоя остаётся тем же, и дубля не будет
 
-  function call(body) {
-    var ctl = new AbortController();
-    var timer = setTimeout(function () { ctl.abort(); }, 30000);
-    // text/plain, чтобы браузер не слал предварительный запрос, на который Apps Script не отвечает
-    var opt = body ? { method: 'POST', body: JSON.stringify(body), headers: { 'Content-Type': 'text/plain;charset=utf-8' } } : {};
-    opt.signal = ctl.signal;
-    return fetch(API_URL, opt).then(function (r) {
-      if (!r.ok) throw new Error('HTTP ' + r.status);
-      return r.json();
-    }).then(function (j) {
-      clearTimeout(timer);
-      if (!j.ok) { var e = new Error(j.error); e.user = String(j.error || ''); throw e; }
-      return j;
-    }, function (e) { clearTimeout(timer); throw e; });
+  function newId() {
+    var b = crypto.getRandomValues(new Uint8Array(8));
+    return 's-' + Array.prototype.map.call(b, function (x) { return ('0' + x.toString(16)).slice(-2); }).join('');
   }
-  function fromBase(o) { return check(o, /^(s-|row)[\w-]+$/, false); }
+  function post(body) {
+    return fetch('/api', { method: 'POST', body: JSON.stringify(body), headers: { 'Content-Type': 'application/json' } })
+      .then(function (r) { return r.json(); })
+      .then(function (j) {
+        if (!j.ok) { var e = new Error(j.error); e.user = String(j.error || ''); throw e; }
+        if (!j.published) note('Сохранено на этом компьютере, но на сайт не отправлено. Отправится вместе со следующей заявкой.');
+        else note('Отправлено на сайт, появится там примерно через минуту.');
+        return j;
+      });
+  }
+  var notice = '';
+  function note(text) { notice = text; }
+  function fromBase(o) { return check(o, /^s-[0-9a-f]{16}$/, CAN_WRITE); }
   function setShared(next) {
     var old = {}, now = {};
     shared.forEach(function (it) { old[it.id] = it; });
@@ -844,12 +825,13 @@
     applyFilters();
   }
   function sync() {
-    if (!API_URL) return;
     var mine = ++syncSeq;
-    call(null).then(function (j) {
+    fetch('listings.json?t=' + Date.now()).then(function (r) {
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      return r.json();
+    }).then(function (j) {
       if (mine !== syncSeq) return;   // пока ждали ответ, заявку сохранили — этот список устарел
-      var next = j.items.map(fromBase).filter(Boolean), keys = loadKeys();
-      next.forEach(function (it) { it.own = !!keys[it.id]; });
+      var next = j.items.map(fromBase).filter(Boolean);
       var same = !sharedError && JSON.stringify(next) === JSON.stringify(shared);
       sharedError = false;
       if (!same) setShared(next);
@@ -869,21 +851,18 @@
     if (map) map.setCenter([it.lat, it.lng], Math.max(map.getZoom(), 14), { duration: 300 }).then(function () { openMark(it); });
   }
   function saveShared(it) {
-    if (busy) return;
-    var id = editId, key = id && loadKeys()[id];
+    var id = editId, isLocal = id && id.indexOf('u-') === 0;
     var label = $('a-save').textContent;
-    if (!key) key = pendingKey = pendingKey || newKey();
+    var target = id && !isLocal ? id : (pendingId = pendingId || newId());
     busy = true;
     $('a-save').disabled = $('a-cancel').disabled = true;
     $('a-save').textContent = 'Сохраняю…';
-    call({ action: loadKeys()[id] ? 'update' : 'add', id: id, key: key, item: it, website: $('a-trap').value }).then(function (j) {
+    post({ action: 'save', id: target, item: it }).then(function (j) {
       var saved = fromBase(j.item);
       if (!saved) throw new Error('bad answer');
       syncSeq++;
-      pendingKey = null;
-      saved.own = saveKey(saved.id, key);
-      // неопубликованная заявка из браузера стала общей
-      if (id && id !== saved.id) {
+      // заявка, лежавшая только в браузере, теперь на сайте
+      if (isLocal) {
         saveOwn(loadOwn().filter(function (x) { return x.id !== id; }));
         if (map) removeMark(id);
       }
@@ -892,7 +871,7 @@
       showSaved(saved);
     }).catch(function (e) {
       $('a-save').textContent = label;
-      fail(null, e.user || 'Нет связи с базой. Заявка не потеряна, нажмите кнопку ещё раз.');
+      fail(null, e.user || 'Сервер не отвечает. Запустите server.py и нажмите кнопку ещё раз, заявка не потеряна.');
     }).then(function () { busy = false; $('a-save').disabled = $('a-cancel').disabled = false; });
   }
 
@@ -920,7 +899,6 @@
       find().then(function (ok) { if (ok) $('a-err').textContent = 'Проверьте точку на карте и нажмите кнопку ещё раз.'; });
       return;
     }
-    if (API_URL && !$('a-ok').checked) return fail('a-ok', 'Отметьте согласие: заявку увидят все посетители.');
     var type = $('form').elements.type.value;
     var kind = $('a-kind').value;
     var own = loadOwn();
@@ -933,7 +911,7 @@
       phone: phone, whatsapp: wa, date: old ? old.date : today(),
       lat: Number(point.lat.toFixed(6)), lng: Number(point.lng.toFixed(6)), own: true
     };
-    if (API_URL) return saveShared(it);
+    if (CAN_WRITE) return saveShared(it);
     own = own.filter(function (x) { return x.id !== it.id; });
     own.unshift(it);
     if (!saveOwn(own)) return fail(null, 'Браузер не дал сохранить заявку. Возможно, включён приватный режим.');
@@ -956,8 +934,7 @@
     $('a-wa').value = $('a-same').checked ? '' : fmtPhone(it.whatsapp);
     point = { lat: it.lat, lng: it.lng, by: 'search' };
     $('form-title').textContent = 'Изменить заявку';
-    $('a-save').textContent = API_URL && !loadKeys()[it.id] ? 'Опубликовать' : 'Сохранить';
-    $('a-ok').checked = !!loadKeys()[it.id];
+    $('a-save').textContent = CAN_WRITE && it.id.indexOf('u-') === 0 ? 'Опубликовать' : 'Сохранить';
     $('a-cancel').hidden = false;
     hint('Точка на карте. Если нужно, перетащите её.', 'ok');
     setMode(true);
@@ -968,8 +945,8 @@
   function ownTools(it) {
     var box = el('div', 'own');
     var local = it.id.indexOf('u-') === 0;
-    box.appendChild(el('em', '', API_URL && local ? 'Видна только мне' : 'Моя заявка'));
-    var e = el('button', 'link', API_URL && local ? 'Опубликовать' : 'Изменить'), d = el('button', 'link danger', 'Удалить');
+    box.appendChild(el('em', '', CAN_WRITE && local ? 'Видна только мне' : 'Моя заявка'));
+    var e = el('button', 'link', CAN_WRITE && local ? 'Опубликовать' : 'Изменить'), d = el('button', 'link danger', 'Удалить');
     e.type = d.type = 'button';
     e.onclick = function (ev) { ev.stopPropagation(); edit(it); };
     d.onclick = function (ev) {
@@ -978,9 +955,8 @@
       if (!local) {
         d.disabled = true;
         d.textContent = 'Удаляю…';
-        call({ action: 'delete', id: it.id, key: loadKeys()[it.id] }).then(function () {
+        post({ action: 'delete', id: it.id }).then(function () {
           syncSeq++;
-          saveKey(it.id, null);
           if (editId === it.id) resetForm();
           setShared(shared.filter(function (x) { return x.id !== it.id; }));
         }).catch(function (err) {
@@ -1025,7 +1001,7 @@
   }
 
   $('tab-list').onclick = function () { setMode(false); renderList(); };
-  $('tab-add').onclick = function () { setMode(true); };
+  $('tab-add').onclick = function () { note(''); setMode(true); };
   $('a-find').onclick = find;
   $('a-addr').onkeydown = function (e) { if (e.key === 'Enter') { e.preventDefault(); find(); } };
   $('a-same').onchange = function () { $('a-wa-wrap').hidden = this.checked; };
