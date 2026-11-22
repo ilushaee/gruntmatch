@@ -4,6 +4,8 @@
  * (Запуск от имени: я; Доступ: все). Полученную ссылку …/exec вписать в API_URL в index.html.
  *
  * Чтобы убрать заявку с карты, поставьте в столбце «Статус» значение «скрыта».
+ *
+ * @OnlyCurrentDoc
  */
 var SHEET_NAME = 'Заявки';
 var COLS = ['id', 'status', 'type', 'volume', 'kind', 'place', 'lat', 'lng', 'company', 'contact', 'phone', 'whatsapp', 'note', 'date', 'key'];
