@@ -343,8 +343,6 @@
   </aside>
 </main>
 
-<!-- меняйте номер версии при обновлении данных, чтобы браузеры не брали старый файл из кэша -->
-<script src="data.js?v=2"></script>
 <script>
 (function () {
   // Ключ JavaScript API Яндекс Карт: получить в developer.tech.yandex.ru и вставить сюда.
@@ -379,10 +377,7 @@
   var shared = [];         // заявки из listings.json
   var sharedError = false;
   function rebuild() {
-    var own = loadOwn(), mine = {};
-    own.concat(shared).forEach(function (it) { mine[it.id] = true; });
-    // если заявку уже перенесли в data.js, дубль не показываем
-    LISTINGS = own.concat(shared, (window.LISTINGS || []).filter(function (it) { return !mine[it.id]; }));
+    LISTINGS = loadOwn().concat(shared);
     LISTINGS.sort(function (a, b) { return a.date < b.date ? 1 : a.date > b.date ? -1 : 0; });
   }
   rebuild();
@@ -505,7 +500,8 @@
     if (!visible.length) {
       list.appendChild(el('li', 'empty',
         filtered.length ? 'В этой части карты объявлений нет. Отдалите карту или сдвиньте её.'
-                        : 'Ничего не найдено. Измените запрос или ослабьте фильтры.'));
+                        : LISTINGS.length ? 'Ничего не найдено. Измените запрос или ослабьте фильтры.'
+                        : 'Заявок пока нет. Добавьте первую во вкладке «Добавить заявку».'));
       return;
     }
     visible.forEach(function (it) {
