@@ -159,6 +159,60 @@
   #list li.empty { display: block; cursor: default; padding: 28px 18px; color: var(--muted); font-size: 14px; line-height: 1.5; }
   #list li.empty:hover { background: none; }
 
+  .tabs { display: grid; grid-template-columns: 1fr 1fr; border-bottom: 1px solid var(--line); flex: none; }
+  .tabs button {
+    padding: 13px 10px; font: inherit; font-size: 15px; font-weight: 700; color: var(--muted);
+    background: none; border: 0; border-bottom: 3px solid transparent; cursor: pointer;
+  }
+  .tabs button:hover { color: var(--ink); }
+  .tabs button[aria-selected="true"] { color: var(--accent); border-bottom-color: var(--accent); }
+  .tabs button:focus-visible { outline: 2px solid var(--accent); outline-offset: -3px; }
+  .panel { display: flex; flex-direction: column; min-height: 0; flex: 1; }
+  .panel[hidden], .fld[hidden] { display: none; }
+
+  #list .own { margin-top: 8px; display: flex; gap: 14px; align-items: center; font-size: 13px; }
+  #list .own em { font-style: normal; font-size: 11px; font-weight: 700; padding: 2px 7px; border-radius: 4px; background: #e6f0f8; color: var(--accent); }
+  .link { font: inherit; font-size: 13px; padding: 2px 0; color: var(--accent); background: none; border: 0; cursor: pointer; text-decoration: underline; text-underline-offset: 2px; }
+  .link.danger { color: #b42318; }
+
+  #form { padding: 16px 18px 20px; overflow-y: auto; display: grid; gap: 14px; align-content: start; flex: 1; }
+  #form h2 { margin: 0; font-size: 17px; }
+  .fld { display: grid; gap: 5px; font-size: 13px; font-weight: 600; color: #4b5563; min-width: 0; }
+  .fld input, .fld select, .fld textarea {
+    width: 100%; min-width: 0; font: inherit; font-size: 15px; font-weight: 400; color: var(--ink);
+    padding: 9px 11px; border: 1px solid #d3d7dd; border-radius: 8px; background: #fff; outline: none;
+  }
+  .fld textarea { resize: vertical; min-height: 64px; }
+  .fld input:focus, .fld select:focus, .fld textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(47,110,165,.15); }
+  .fld [aria-invalid="true"] { border-color: #b42318; }
+  .row { display: grid; grid-template-columns: 110px 1fr; gap: 10px; }
+  .addr { display: grid; grid-template-columns: 1fr auto; gap: 8px; }
+  .seg { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; padding: 5px; background: var(--panel); border-radius: 10px; }
+  .seg label { position: relative; cursor: pointer; }
+  .seg input { position: absolute; opacity: 0; }
+  .seg span { display: block; text-align: center; padding: 8px; border-radius: 7px; font-size: 15px; font-weight: 700; color: var(--muted); }
+  .seg input:checked + span { background: var(--accent); color: #fff; }
+  .seg input:focus-visible + span { outline: 2px solid var(--ink); outline-offset: 2px; }
+  .chk { display: flex; gap: 8px; align-items: center; font-size: 14px; cursor: pointer; }
+  .chk input { width: 17px; height: 17px; margin: 0; accent-color: var(--accent); }
+  .btn { font: inherit; font-size: 15px; font-weight: 700; padding: 10px 14px; border-radius: 8px; border: 1px solid #d3d7dd; background: #fff; color: var(--ink); cursor: pointer; }
+  .btn:hover { background: var(--panel); }
+  .btn.main { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .btn.main:hover { background: #275e8e; }
+  .btn:disabled { opacity: .55; cursor: default; }
+  .btns { display: flex; gap: 8px; }
+  .btns .main { flex: 1; }
+  .hint { font-size: 13px; line-height: 1.4; color: var(--muted); }
+  .hint.ok { color: #17753c; } .hint.warn { color: #95590a; } .hint.err { color: #b42318; }
+  .hint:empty { display: none; }
+  #variants { list-style: none; margin: 0; padding: 0; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+  #variants:empty { display: none; }
+  #variants button { width: 100%; text-align: left; font: inherit; font-size: 14px; line-height: 1.35; padding: 9px 11px; border: 0; border-top: 1px solid var(--line); background: #fff; color: var(--ink); cursor: pointer; }
+  #variants li:first-child button { border-top: 0; }
+  #variants button:hover, #variants button.on { background: #e6f0f8; }
+  .store { border-top: 1px solid var(--line); padding-top: 14px; display: grid; gap: 8px; }
+  .store div { display: flex; gap: 16px; flex-wrap: wrap; }
+
   /* карточка в балуне Яндекс Карт */
   .pop { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; color: #1f2328; width: 250px; padding: 2px 0; }
   .pop .tag {
@@ -189,7 +243,7 @@
     header { padding: 10px 16px; gap: 10px; }
     main { grid-template-columns: 1fr; grid-template-rows: 55vh auto; overflow-y: auto; }
     aside { border-left: 0; border-top: 1px solid var(--line); }
-    #list { overflow: visible; }
+    #list, #form { overflow: visible; }
   }
 </style>
 </head>
@@ -223,8 +277,69 @@
     <button id="btn-all" type="button">Вся область</button>
   </div>
   <aside>
-    <div class="count" id="count"></div>
-    <ul id="list"></ul>
+    <div class="tabs" role="tablist">
+      <button type="button" role="tab" id="tab-list" aria-controls="p-list" aria-selected="true">Объявления</button>
+      <button type="button" role="tab" id="tab-add" aria-controls="p-add" aria-selected="false">+ Добавить заявку</button>
+    </div>
+    <div class="panel" id="p-list" role="tabpanel" aria-labelledby="tab-list">
+      <div class="count" id="count"></div>
+      <ul id="list"></ul>
+    </div>
+    <div class="panel" id="p-add" role="tabpanel" aria-labelledby="tab-add" hidden>
+      <form id="form" novalidate autocomplete="off">
+        <h2 id="form-title">Новая заявка</h2>
+        <div class="seg">
+          <label><input type="radio" name="type" value="have" checked><span>Есть грунт</span></label>
+          <label><input type="radio" name="type" value="need"><span>Нужен грунт</span></label>
+        </div>
+        <div class="row">
+          <label class="fld">Объём, м³ <input id="a-vol" type="number" min="0" step="any" inputmode="decimal"></label>
+          <label class="fld">Вид грунта
+            <select id="a-kind">
+              <option value="чистого насыпного грунта">Чистый насыпной грунт</option>
+              <option value="грунта после котлована">Грунт после котлована</option>
+              <option value="грунта со строительным мусором">Грунт со строительным мусором</option>
+              <option value="плодородного грунта">Плодородный грунт</option>
+              <option value="песка">Песок</option>
+              <option value="глины">Глина</option>
+              <option value="суглинка">Суглинок</option>
+              <option value="торфа">Торф</option>
+              <option value="грунта для отсыпки участка">Грунт для отсыпки участка</option>
+              <option value="грунта любого типа">Грунт любого типа</option>
+            </select>
+          </label>
+        </div>
+        <div class="fld">
+          <label for="a-addr">Адрес</label>
+          <div class="addr">
+            <input id="a-addr" type="text" placeholder="Химки, Ленинградская улица, 1">
+            <button class="btn" type="button" id="a-find">Найти</button>
+          </div>
+        </div>
+        <ul id="variants"></ul>
+        <div class="hint" id="a-hint" role="status"></div>
+        <label class="fld">Название компании <input id="a-company" type="text" placeholder="ООО, ИП или частное лицо"></label>
+        <label class="fld">ФИО <input id="a-contact" type="text"></label>
+        <label class="fld">Телефон <input id="a-phone" type="tel" placeholder="+7 900 000-00-00"></label>
+        <label class="chk"><input id="a-same" type="checkbox" checked> На этом номере есть WhatsApp</label>
+        <label class="fld" id="a-wa-wrap" hidden>WhatsApp, если номер другой <input id="a-wa" type="tel"></label>
+        <label class="fld">Комментарий <textarea id="a-note" placeholder="Погрузка, подъезд, сроки"></textarea></label>
+        <div class="hint err" id="a-err" role="alert"></div>
+        <div class="btns">
+          <button class="btn main" type="submit" id="a-save">Добавить на карту</button>
+          <button class="btn" type="button" id="a-cancel" hidden>Отмена</button>
+        </div>
+        <div class="store">
+          <span class="hint" id="a-count"></span>
+          <div>
+            <button class="link" type="button" id="a-export">Скачать мои заявки</button>
+            <button class="link" type="button" id="a-import">Загрузить из файла</button>
+            <input id="a-file" type="file" accept=".json,application/json" hidden>
+          </div>
+        </div>
+        <span class="hint">Поиск адреса: © OpenStreetMap</span>
+      </form>
+    </div>
   </aside>
 </main>
 
@@ -235,7 +350,37 @@
   // Ключ JavaScript API Яндекс Карт: получить в developer.tech.yandex.ru и вставить сюда.
   var YANDEX_API_KEY = '';
 
-  var LISTINGS = window.LISTINGS || [];
+  var STORE_KEY = 'gruntmatch.own';
+  function $(id) { return document.getElementById(id); }
+
+  // Проверка записи из хранилища или файла: лишние поля отбрасываем, битые записи не берём
+  function clean(o) {
+    if (!o || typeof o !== 'object') return null;
+    var n = { id: String(o.id || ''), type: o.type, title: String(o.title || ''), volume: Number(o.volume),
+              lat: Number(o.lat), lng: Number(o.lng), date: String(o.date || ''), own: true };
+    ['place', 'note', 'contact', 'company', 'phone', 'whatsapp', 'kind'].forEach(function (k) { n[k] = String(o[k] || ''); });
+    var ok = n.id.indexOf('u-') === 0 && (n.type === 'have' || n.type === 'need') && n.title && n.volume > 0 &&
+             n.lat >= 50 && n.lat <= 60 && n.lng >= 30 && n.lng <= 45 && /^\d{4}-\d{2}-\d{2}$/.test(n.date);
+    return ok ? n : null;
+  }
+  function loadOwn() {
+    try { return (JSON.parse(localStorage.getItem(STORE_KEY)) || []).map(clean).filter(Boolean); }
+    catch (e) { return []; }
+  }
+  function saveOwn(arr) {
+    try { localStorage.setItem(STORE_KEY, JSON.stringify(arr)); return true; }
+    catch (e) { return false; }
+  }
+
+  var LISTINGS = [];
+  function rebuild() {
+    var own = loadOwn(), mine = {};
+    own.forEach(function (it) { mine[it.id] = true; });
+    // свои заявки сверху; если заявку уже перенесли в data.js, дубль не показываем
+    LISTINGS = own.concat((window.LISTINGS || []).filter(function (it) { return !mine[it.id]; }));
+    LISTINGS.sort(function (a, b) { return a.date < b.date ? 1 : a.date > b.date ? -1 : 0; });
+  }
+  rebuild();
   var REGION = [[54.15, 34.9], [57.05, 40.5]];   // Московская область с запасом
   var HOME = { center: [55.75, 37.62], zoom: 10 };
 
@@ -361,6 +506,7 @@
       var who = [it.company, it.contact].filter(Boolean).join(' · ');
       if (who) body.appendChild(el('div', 'c', who));
       body.appendChild(el('div', 'd', fmtDate(it.date)));
+      if (it.own) body.appendChild(ownTools(it));
       li.appendChild(body);
       li.onclick = function () { openMark(it); };
       li.onmouseenter = function () { hot(it.id, true); };
@@ -407,7 +553,19 @@
       yandexMapDisablePoiInteractivity: true
     });
 
-    LISTINGS.forEach(function (it) {
+    LISTINGS.forEach(addMark);
+
+    map.events.add('boundschange', renderList);
+    map.events.add('click', function (e) { if (adding) placeByHand(e.get('coords')); });
+    document.getElementById('btn-all').onclick = function () {
+      map.setBounds(REGION, { checkZoomRange: true, duration: 500 });
+    };
+    if (adding) setMode(true);
+    if (point) showDraft();
+    applyFilters();
+  }
+
+  function addMark(it) {
       var baseZ = it.type === 'have' ? 700 : 650;
       var m = new ymaps.Placemark([it.lat, it.lng], {
         hintContent: esc(it.title),
@@ -427,14 +585,320 @@
       m.events.add('balloonclose', function () { if (activeId === it.id) setActive(null); });
       marks[it.id] = m;
       map.geoObjects.add(m);
-    });
-
-    map.events.add('boundschange', renderList);
-    document.getElementById('btn-all').onclick = function () {
-      map.setBounds(REGION, { checkZoomRange: true, duration: 500 });
-    };
-    applyFilters();
   }
+  function removeMark(id) {
+    if (marks[id]) { map.geoObjects.remove(marks[id]); delete marks[id]; }
+    if (activeId === id) activeId = null;
+  }
+
+  // ---------- Вкладка «Добавить заявку» ----------
+  var adding = false;      // открыта ли вкладка
+  var editId = null;       // id заявки, которую правим
+  var point = null;        // {lat, lng, by: 'search' | 'hand'}
+  var pointAddr = '';      // адрес, для которого найдена точка
+  var draft = null;        // метка-черновик
+  var cursor = null;
+  var seq = 0;             // чтобы опоздавший ответ геокодера не затёр новый
+
+  function today() {
+    var d = new Date();
+    return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2);
+  }
+  function hint(text, cls) { $('a-hint').textContent = text; $('a-hint').className = 'hint ' + (cls || ''); }
+  function setMode(on) {
+    adding = on;
+    $('p-list').hidden = on;
+    $('p-add').hidden = !on;
+    $('tab-list').setAttribute('aria-selected', String(!on));
+    $('tab-add').setAttribute('aria-selected', String(on));
+    if (map) {
+      if (on && !cursor) cursor = map.cursors.push('crosshair');
+      if (!on && cursor) { cursor.remove(); cursor = null; }
+      if (on) map.balloon.close();
+      if (draft) draft.options.set('visible', on);
+    }
+    if (on && !point && !$('a-hint').textContent) hint('Введите адрес и нажмите «Найти» или просто щёлкните по карте.');
+    countOwn();
+  }
+  function countOwn() {
+    var n = loadOwn().length;
+    $('a-count').textContent = 'Моих заявок: ' + n + '. Они хранятся в этом браузере и видны только вам.';
+    $('a-export').disabled = !n;
+    $('a-export').style.opacity = n ? 1 : .5;
+  }
+
+  function showDraft() {
+    if (!map || !point) return;
+    if (!draft) {
+      draft = new ymaps.Placemark([point.lat, point.lng], { hintContent: 'Перетащите, чтобы уточнить место' },
+        { preset: 'islands#blueDotIcon', draggable: true, zIndex: 3000, hasBalloon: false });
+      draft.events.add('dragend', function () { placeByHand(draft.geometry.getCoordinates(), true); });
+      map.geoObjects.add(draft);
+    }
+    draft.geometry.setCoordinates([point.lat, point.lng]);
+    draft.options.set('visible', adding);
+  }
+  function clearDraft() {
+    if (draft) { map.geoObjects.remove(draft); draft = null; }
+    point = null; pointAddr = ''; seq++;
+    $('variants').textContent = '';
+  }
+
+  function shortAddr(r) {
+    var a = r.address || {};
+    var msk = a['ISO3166-2-lvl4'] === 'RU-MOW';
+    var town = a.city || a.town || a.village || a.hamlet || a.municipality || a.county || '';
+    var parts = [msk ? 'Москва' : town];
+    if (msk && town && town !== 'Москва') parts.push(town);
+    if (!a.road && (a.suburb || a.neighbourhood)) parts.push(a.suburb || a.neighbourhood);
+    if (a.road) parts.push(a.road);
+    if (a.house_number) parts.push(a.house_number);
+    if (!msk) parts.push(a.state);
+    return parts.filter(Boolean).join(', ');
+  }
+  function osm(path, params) {
+    params.format = 'jsonv2'; params.addressdetails = 1; params['accept-language'] = 'ru';
+    return fetch('https://nominatim.openstreetmap.org/' + path + '?' + new URLSearchParams(params)).then(function (r) {
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      return r.json();
+    });
+  }
+  // → [{addr, lat, lng, exact}]
+  function geocode(text) {
+    if (YANDEX_API_KEY && window.ymaps && ymaps.geocode) {
+      return ymaps.geocode(text, { boundedBy: REGION, strictBounds: true, results: 5 }).then(function (g) {
+        return g.geoObjects.toArray().map(function (o) {
+          var c = o.geometry.getCoordinates();
+          return { addr: o.getAddressLine().replace(/^Россия, /, ''), lat: c[0], lng: c[1], exact: !!o.getPremiseNumber() };
+        });
+      });
+    }
+    return osmSearch(text).then(function (vs) {
+      // короткий адрес без города: в выдачу попадают соседние области, уточняем регион
+      if (vs.length || /москв|москов/i.test(text)) return vs;
+      return new Promise(function (ok) { setTimeout(ok, 1100); })   // у OpenStreetMap лимит — запрос в секунду
+        .then(function () { return osmSearch(text + ', Московская область'); });
+    });
+  }
+  function osmSearch(text) {
+    return osm('search', { q: text, limit: 20, countrycodes: 'ru', bounded: 1,
+      viewbox: [REGION[0][1], REGION[1][0], REGION[1][1], REGION[0][0]].join(',') }).then(function (rows) {
+      var seen = {};
+      return rows.filter(function (r) {
+        return /^RU-(MOW|MOS)$/.test((r.address || {})['ISO3166-2-lvl4'] || '');
+      }).map(function (r) {
+        return { addr: shortAddr(r), lat: Number(r.lat), lng: Number(r.lon), exact: !!(r.address || {}).house_number };
+      }).filter(function (v) {
+        if (!v.addr || seen[v.addr]) return false;
+        return (seen[v.addr] = true);
+      }).slice(0, 5);
+    });
+  }
+
+  function choose(v, query) {
+    point = { lat: v.lat, lng: v.lng, by: 'search' };
+    $('a-addr').value = pointAddr = v.addr;
+    showDraft();
+    if (map) map.setCenter([v.lat, v.lng], v.exact ? 16 : 14, { duration: 400 });
+    if (/\d/.test(query) && !v.exact) hint('Дом не найден, точка стоит примерно. Перетащите её на место.', 'warn');
+    else hint('Точка на карте. Если нужно, перетащите её.', 'ok');
+  }
+  function find() {
+    var text = $('a-addr').value.trim();
+    var mine = ++seq;
+    $('variants').textContent = '';
+    if (!text) { hint('Введите адрес.', 'err'); return Promise.resolve(false); }
+    hint('Ищу адрес…');
+    $('a-find').disabled = true;
+    return geocode(text).then(function (vs) {
+      if (mine !== seq) return false;
+      if (!vs.length) { hint('Адрес не найден в Москве и области. Уточните его или щёлкните место на карте.', 'err'); return false; }
+      choose(vs[0], text);
+      if (vs.length > 1) vs.forEach(function (v, i) {
+        var li = document.createElement('li');
+        var b = el('button', i === 0 ? 'on' : '', v.addr);
+        b.type = 'button';
+        b.onclick = function () {
+          Array.prototype.forEach.call($('variants').querySelectorAll('button'), function (x) { x.classList.toggle('on', x === b); });
+          choose(v, text);
+        };
+        li.appendChild(b);
+        $('variants').appendChild(li);
+      });
+      return true;
+    }).catch(function () {
+      if (mine === seq) hint('Поиск адреса сейчас не отвечает. Щёлкните место на карте.', 'err');
+      return false;
+    }).then(function (ok) { $('a-find').disabled = false; return ok; });
+  }
+  // Точка щелчком или перетаскиванием. Введённый адрес не трогаем, пустой подбираем по точке.
+  function placeByHand(c, dragged) {
+    var auto = !$('a-addr').value.trim() || (!dragged && $('a-addr').value === pointAddr);
+    var mine = ++seq;
+    point = { lat: c[0], lng: c[1], by: 'hand' };
+    $('variants').textContent = '';
+    showDraft();
+    hint('Точка на карте. Если нужно, перетащите её.', 'ok');
+    if (!auto) return;
+    osm('reverse', { lat: c[0], lon: c[1], zoom: 18 }).then(function (r) {
+      if (mine !== seq || !r.address) return;
+      $('a-addr').value = pointAddr = shortAddr(r);
+    }).catch(function () {
+      if (mine === seq) hint('Точка стоит, но адрес определить не удалось. Впишите его вручную.', 'warn');
+    });
+  }
+
+  function normPhone(s) {
+    var d = digits(s);
+    if (d.length === 10) d = '7' + d;
+    if (d.length === 11 && d[0] === '8') d = '7' + d.slice(1);
+    return d.length === 11 && d[0] === '7' ? '+' + d : null;
+  }
+  function fail(id, text) {
+    $('a-err').textContent = text;
+    if (id) { $(id).setAttribute('aria-invalid', 'true'); $(id).focus(); }
+  }
+  function resetForm() {
+    $('form').reset();
+    editId = null;
+    clearDraft();
+    $('a-wa-wrap').hidden = true;
+    $('form-title').textContent = 'Новая заявка';
+    $('a-save').textContent = 'Добавить на карту';
+    $('a-cancel').hidden = true;
+    $('a-err').textContent = '';
+    hint('');
+  }
+
+  function submit() {
+    $('a-err').textContent = '';
+    Array.prototype.forEach.call($('form').querySelectorAll('[aria-invalid]'), function (x) { x.removeAttribute('aria-invalid'); });
+    var vol = Number($('a-vol').value);
+    if (!(vol > 0)) return fail('a-vol', 'Укажите объём больше нуля.');
+    var addr = $('a-addr').value.trim();
+    if (!addr) return fail('a-addr', 'Укажите адрес или щёлкните место на карте.');
+    var phone = '', wa = '';
+    if ($('a-phone').value.trim()) {
+      phone = normPhone($('a-phone').value);
+      if (!phone) return fail('a-phone', 'Проверьте телефон: нужно 10 цифр после +7.');
+    }
+    if ($('a-same').checked) wa = phone;
+    else if ($('a-wa').value.trim()) {
+      wa = normPhone($('a-wa').value);
+      if (!wa) return fail('a-wa', 'Проверьте номер WhatsApp: нужно 10 цифр после +7.');
+    }
+    if (!phone && !wa) return fail('a-phone', 'Укажите телефон, чтобы с вами могли связаться.');
+    // адрес поменяли после поиска — сначала показываем новую точку, сохраняем со второго нажатия
+    if (!point || (point.by === 'search' && addr !== pointAddr)) {
+      find().then(function (ok) { if (ok) $('a-err').textContent = 'Проверьте точку на карте и нажмите кнопку ещё раз.'; });
+      return;
+    }
+    var type = $('form').elements.type.value;
+    var kind = $('a-kind').value;
+    var own = loadOwn();
+    var old = own.filter(function (x) { return x.id === editId; })[0];
+    var it = {
+      id: old ? old.id : 'u-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+      type: type, kind: kind, volume: vol,
+      title: (type === 'have' ? 'Есть ' : 'Нужно ') + vol.toLocaleString('ru-RU', { useGrouping: false }) + ' м³ ' + kind,
+      place: addr, note: $('a-note').value.trim(), contact: $('a-contact').value.trim(), company: $('a-company').value.trim(),
+      phone: phone, whatsapp: wa, date: old ? old.date : today(),
+      lat: Number(point.lat.toFixed(6)), lng: Number(point.lng.toFixed(6)), own: true
+    };
+    own = own.filter(function (x) { return x.id !== it.id; });
+    own.unshift(it);
+    if (!saveOwn(own)) return fail(null, 'Браузер не дал сохранить заявку. Возможно, включён приватный режим.');
+    rebuild();
+    if (map) { removeMark(it.id); addMark(it); }
+    resetForm();
+    // чтобы новая точка точно была видна, снимаем фильтры
+    fHave.checked = fNeed.checked = true; fVol.value = ''; q.value = '';
+    setMode(false);
+    applyFilters();
+    document.querySelector('.mapwrap').scrollIntoView({ block: 'nearest' });
+    if (map) map.setCenter([it.lat, it.lng], Math.max(map.getZoom(), 14), { duration: 300 }).then(function () { openMark(it); });
+  }
+
+  function edit(it) {
+    resetForm();
+    editId = it.id;
+    $('form').elements.type.value = it.type;
+    $('a-vol').value = it.volume;
+    if (it.kind) $('a-kind').value = it.kind;
+    $('a-addr').value = pointAddr = it.place;
+    $('a-company').value = it.company; $('a-contact').value = it.contact; $('a-note').value = it.note;
+    $('a-phone').value = fmtPhone(it.phone);
+    $('a-same').checked = it.phone === it.whatsapp;
+    $('a-wa-wrap').hidden = $('a-same').checked;
+    $('a-wa').value = $('a-same').checked ? '' : fmtPhone(it.whatsapp);
+    point = { lat: it.lat, lng: it.lng, by: 'search' };
+    $('form-title').textContent = 'Изменить заявку';
+    $('a-save').textContent = 'Сохранить';
+    $('a-cancel').hidden = false;
+    hint('Точка на карте. Если нужно, перетащите её.', 'ok');
+    setMode(true);
+    showDraft();
+    if (map) map.setCenter([it.lat, it.lng], Math.max(map.getZoom(), 14), { duration: 300 });
+    $('tab-add').scrollIntoView({ block: 'nearest' });
+  }
+  function ownTools(it) {
+    var box = el('div', 'own');
+    box.appendChild(el('em', '', 'Моя заявка'));
+    var e = el('button', 'link', 'Изменить'), d = el('button', 'link danger', 'Удалить');
+    e.type = d.type = 'button';
+    e.onclick = function (ev) { ev.stopPropagation(); edit(it); };
+    d.onclick = function (ev) {
+      ev.stopPropagation();
+      if (!d.dataset.sure) { d.dataset.sure = '1'; d.textContent = 'Точно удалить?'; return; }
+      if (!saveOwn(loadOwn().filter(function (x) { return x.id !== it.id; }))) return;
+      if (editId === it.id) resetForm();
+      rebuild();
+      if (map) removeMark(it.id);
+      applyFilters();
+      countOwn();
+    };
+    box.appendChild(e); box.appendChild(d);
+    return box;
+  }
+
+  function exportOwn() {
+    var blob = new Blob([JSON.stringify(loadOwn(), null, 2)], { type: 'application/json' });
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'zayavki-' + today() + '.json';
+    a.click();
+    setTimeout(function () { URL.revokeObjectURL(a.href); }, 1000);
+  }
+  function importOwn(file) {
+    file.text().then(function (t) {
+      var raw = JSON.parse(t);
+      var good = raw.map(clean).filter(Boolean), ids = {};
+      good.forEach(function (x) { ids[x.id] = true; });
+      if (!good.length) throw new Error('empty');
+      if (!saveOwn(good.concat(loadOwn().filter(function (x) { return !ids[x.id]; })))) throw new Error('store');
+      rebuild();
+      if (map) good.forEach(function (x) { removeMark(x.id); addMark(x); });
+      applyFilters();
+      countOwn();
+      $('a-err').textContent = '';
+      hint('Загружено заявок: ' + good.length + (raw.length > good.length ? ', пропущено: ' + (raw.length - good.length) : '') + '.', 'ok');
+    }).catch(function () { fail(null, 'Не получилось загрузить файл. Нужен файл, скачанный кнопкой «Скачать мои заявки».'); });
+  }
+
+  $('tab-list').onclick = function () { setMode(false); renderList(); };
+  $('tab-add').onclick = function () { setMode(true); };
+  $('a-find').onclick = find;
+  $('a-addr').onkeydown = function (e) { if (e.key === 'Enter') { e.preventDefault(); find(); } };
+  $('a-same').onchange = function () { $('a-wa-wrap').hidden = this.checked; };
+  $('a-cancel').onclick = function () { resetForm(); setMode(false); renderList(); };
+  $('form').addEventListener('input', function (e) {
+    e.target.removeAttribute('aria-invalid');
+    $('a-err').textContent = '';
+  });
+  $('form').onsubmit = function (e) { e.preventDefault(); submit(); };
+  $('a-export').onclick = exportOwn;
+  $('a-import').onclick = function () { $('a-file').click(); };
+  $('a-file').onchange = function () { if (this.files[0]) importOwn(this.files[0]); this.value = ''; };
 
   fHave.onchange = fNeed.onchange = fVol.onchange = applyFilters;
   q.oninput = function () {
